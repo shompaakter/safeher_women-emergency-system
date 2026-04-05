@@ -7,10 +7,9 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// Steps: 'form' → 'otp' → done
 export default function Register() {
   const router = useRouter();
-  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [step, setStep] = useState('form');
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -29,13 +28,9 @@ export default function Register() {
     setError('');
   };
 
-  // Basic email validator
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  // Basic BD phone validator
   const isValidPhone = (phone) => /^01[3-9]\d{8}$/.test(phone);
 
-  // Step 1: Submit registration form → backend sends OTP to phone
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -58,13 +53,12 @@ export default function Register() {
 
     setLoading(true);
     try {
-      // Backend should send OTP to phone and/or email
       await axios.post(`${API_URL}/api/auth/send-otp`, {
         phone: form.phone,
         email: form.email,
         name: form.name,
       });
-      setSuccess('A 6-digit OTP has been sent to your phone number.');
+      setSuccess('A 6-digit OTP has been sent to your email address.');
       setStep('otp');
       startResendCooldown();
     } catch (err) {
@@ -74,9 +68,8 @@ export default function Register() {
     }
   };
 
-  // OTP input handling — auto-advance to next box
   const handleOtpChange = (index, value) => {
-    if (!/^\d?$/.test(value)) return; // digits only
+    if (!/^\d?$/.test(value)) return;
     const updated = [...otp];
     updated[index] = value;
     setOtp(updated);
@@ -100,7 +93,6 @@ export default function Register() {
     e.preventDefault();
   };
 
-  // Step 2: Verify OTP → register user
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
     const otpCode = otp.join('');
@@ -123,7 +115,6 @@ export default function Register() {
     }
   };
 
-  // Resend OTP with 60s cooldown
   const handleResend = async () => {
     if (resendCooldown > 0) return;
     setError('');
@@ -134,7 +125,7 @@ export default function Register() {
         email: form.email,
         name: form.name,
       });
-      setSuccess('OTP resent successfully.');
+      setSuccess('OTP resent to your email successfully.');
       startResendCooldown();
     } catch {
       setError('Failed to resend OTP.');
@@ -155,17 +146,15 @@ export default function Register() {
     <main className="min-h-screen bg-linear-to-br from-pink-50 via-white to-orange-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
 
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="font-serif text-3xl font-black text-pink-500">SafeHer</Link>
           <p className="text-sm text-gray-400 mt-1">
-            {step === 'form' ? 'Create your account' : 'Verify your phone number'}
+            {step === 'form' ? 'Create your account' : 'Verify your email'}
           </p>
         </div>
 
         <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
 
-          {/* Step indicator */}
           <div className="flex items-center gap-2 mb-6">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${step === 'form' ? 'bg-pink-500 text-white' : 'bg-green-100 text-green-600'}`}>
               {step === 'form' ? '1' : '✓'}
@@ -187,12 +176,10 @@ export default function Register() {
             </div>
           )}
 
-          {/* ── STEP 1: Registration Form ── */}
           {step === 'form' && (
             <>
               <h2 className="font-serif text-2xl font-bold text-indigo-900 mb-5">Register</h2>
               <form onSubmit={handleFormSubmit} className="space-y-4">
-
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1.5">Full Name</label>
                   <input type="text" name="name" value={form.name} onChange={handleChange}
@@ -205,7 +192,7 @@ export default function Register() {
                   <input type="email" name="email" value={form.email} onChange={handleChange}
                     placeholder="you@email.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm transition-all" />
-                  <p className="text-xs text-gray-400 mt-1">Used for account recovery only.</p>
+                  <p className="text-xs text-gray-400 mt-1">OTP will be sent to this email.</p>
                 </div>
 
                 <div>
@@ -213,7 +200,6 @@ export default function Register() {
                   <input type="tel" name="phone" value={form.phone} onChange={handleChange}
                     placeholder="01XXXXXXXXX"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm transition-all" />
-                  <p className="text-xs text-gray-400 mt-1">An OTP will be sent here to verify.</p>
                 </div>
 
                 <div>
@@ -238,16 +224,14 @@ export default function Register() {
             </>
           )}
 
-          {/* ── STEP 2: OTP Verification ── */}
           {step === 'otp' && (
             <>
-              <h2 className="font-serif text-2xl font-bold text-indigo-900 mb-2">Verify Phone</h2>
+              <h2 className="font-serif text-2xl font-bold text-indigo-900 mb-2">Verify Email</h2>
               <p className="text-sm text-gray-400 mb-6">
-                Enter the 6-digit code sent to <span className="font-medium text-gray-600">{form.phone}</span>
+                Enter the 6-digit code sent to <span className="font-medium text-gray-600">{form.email}</span>
               </p>
 
               <form onSubmit={handleOtpSubmit} className="space-y-5">
-                {/* OTP boxes */}
                 <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
                   {otp.map((digit, i) => (
                     <input
@@ -273,7 +257,7 @@ export default function Register() {
               <div className="flex items-center justify-between mt-4 text-sm">
                 <button onClick={() => { setStep('form'); setError(''); setSuccess(''); setOtp(['','','','','','']); }}
                   className="text-gray-400 hover:text-gray-600 transition-colors">
-                  ← Change number
+                  ← Change details
                 </button>
                 <button onClick={handleResend} disabled={resendCooldown > 0}
                   className={`font-medium transition-colors ${resendCooldown > 0 ? 'text-gray-300 cursor-not-allowed' : 'text-pink-500 hover:text-pink-600'}`}>

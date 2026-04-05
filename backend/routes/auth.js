@@ -3,20 +3,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const User = require('../models/User');
+const { sendOTP } = require('../utils/mailer');
 
 const otpStore = new Map();
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-const twilio = require('twilio');
-const twilioClient = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
-
-const VERIFY_SID = process.env.TWILIO_VERIFY_SID;
-
-// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/auth/send-otp
-// ─────────────────────────────────────────────────────────────────────────────
 router.post('/send-otp', async (req, res) => {
   try {
     const { phone, email, name } = req.body;
@@ -35,24 +27,21 @@ router.post('/send-otp', async (req, res) => {
       return res.status(409).json({ message: 'This email is already registered.' });
     }
 
-    // Store name & email temporarily
-    otpStore.set(phone, { name, email });
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
 
-    const cleanPhone = `+88${phone.replace(/^\+?88/, '')}`;
+    otpStore.set(phone, { otp, expiresAt, name, email });
 
-    await twilioClient.verify.v2.services(VERIFY_SID)
-      .verifications.create({ to: cleanPhone, channel: 'sms' });
+    await sendOTP(email, otp, name);
 
-    res.json({ message: 'OTP sent successfully.' });
+    res.json({ message: 'OTP sent to your email.' });
   } catch (err) {
     console.error('send-otp error:', err);
     res.status(500).json({ message: 'Failed to send OTP. Try again.' });
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/auth/register
-// ─────────────────────────────────────────────────────────────────────────────
 router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, password, otp } = req.body;
@@ -61,13 +50,15 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    const cleanPhone = `+88${phone.replace(/^\+?88/, '')}`;
-
-    // Verify OTP via Twilio
-    const verification = await twilioClient.verify.v2.services(VERIFY_SID)
-      .verificationChecks.create({ to: cleanPhone, code: otp });
-
-    if (verification.status !== 'approved') {
+    const stored = otpStore.get(phone);
+    if (!stored) {
+      return res.status(400).json({ message: 'OTP not found. Please request a new one.' });
+    }
+    if (Date.now() > stored.expiresAt) {
+      otpStore.delete(phone);
+      return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+    }
+    if (stored.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP. Please try again.' });
     }
 
@@ -94,9 +85,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
 // POST /api/auth/login
-// ─────────────────────────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
@@ -137,6 +126,58 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('login error:', err);
     res.status(500).json({ message: 'Login failed. Please try again.' });
+  }
+});
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required.' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'No account found with this email.' });
+
+    const otp = generateOTP();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    otpStore.set(email, { otp, expiresAt, userId: user._id });
+
+    await sendOTP(email, otp, user.name);
+
+    res.json({ message: 'Password reset OTP sent to your email.' });
+  } catch (err) {
+    console.error('forgot-password error:', err);
+    res.status(500).json({ message: 'Failed to send OTP. Try again.' });
+  }
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+
+    const stored = otpStore.get(email);
+    if (!stored) return res.status(400).json({ message: 'OTP not found. Please request a new one.' });
+    if (Date.now() > stored.expiresAt) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: 'OTP expired. Please request a new one.' });
+    }
+    if (stored.otp !== otp) return res.status(400).json({ message: 'Invalid OTP.' });
+
+    otpStore.delete(email);
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await User.findByIdAndUpdate(stored.userId, { password: hashedPassword });
+
+    res.json({ message: 'Password reset successfully. Please log in.' });
+  } catch (err) {
+    console.error('reset-password error:', err);
+    res.status(500).json({ message: 'Failed to reset password. Try again.' });
   }
 });
 
