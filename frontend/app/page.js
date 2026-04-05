@@ -1,27 +1,45 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 
 export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <main className="min-h-screen bg-white font-sans">
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
         <span className="font-serif text-2xl font-bold text-pink-500 tracking-tight">SafeHer</span>
-        <div className="flex items-center gap-6">
+
+        {/* Desktop Menu */}
+        <div className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-sm text-gray-500 hover:text-pink-500 transition-colors">Home</Link>
           <Link href="#features" className="text-sm text-gray-500 hover:text-pink-500 transition-colors">Features</Link>
-         
-         
-        <Link href="/about" className="text-sm text-gray-500 hover:text-pink-500 transition-colors">About</Link>
-           <Link href="/trusted-contacts" className="text-sm text-gray-500 hover:text-pink-500 transition-colors">
-    Trusted Contacts
-          </Link>
+          <Link href="/about" className="text-sm text-gray-500 hover:text-pink-500 transition-colors">About</Link>
           <Link href="/login" className="text-sm bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-full transition-colors">Login</Link>
           <Link href="/register" className="text-sm border border-pink-500 text-pink-500 hover:bg-pink-50 px-4 py-2 rounded-full transition-colors">Register</Link>
         </div>
+
+        {/* Mobile Hamburger */}
+        <button className="md:hidden flex flex-col gap-1.5 p-2" onClick={() => setMenuOpen(!menuOpen)}>
+          <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+          <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? 'opacity-0' : ''}`}></span>
+          <span className={`block w-6 h-0.5 bg-gray-600 transition-all ${menuOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+        </button>
       </nav>
+
+      {/* Mobile Menu Dropdown */}
+      {menuOpen && (
+        <div className="md:hidden bg-white border-b border-gray-100 px-6 py-4 flex flex-col gap-4 z-40">
+          <Link href="/" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-pink-500">Home</Link>
+          <Link href="#features" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-pink-500">Features</Link>
+          <Link href="/about" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-pink-500">About</Link>
+          <Link href="/login" onClick={() => setMenuOpen(false)} className="text-sm bg-pink-500 text-white px-4 py-2 rounded-full text-center">Login</Link>
+          <Link href="/register" onClick={() => setMenuOpen(false)} className="text-sm border border-pink-500 text-pink-500 px-4 py-2 rounded-full text-center">Register</Link>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 items-center min-h-screen px-6 md:px-16 py-16 gap-10 bg-linear-to-br from-pink-50 via-orange-50 to-pink-50">
