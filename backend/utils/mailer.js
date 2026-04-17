@@ -1,4 +1,8 @@
 // backend/utils/mailer.js
+// সব কিছু শুধু Nodemailer (Gmail) দিয়ে:
+// 1. sendOTP              → Registration + Forgot Password OTP
+// 2. sendSosEmail         → SOS alert with location + map link
+// 3. sendNewReportEmail   → New report notification to admin
 
 const nodemailer = require('nodemailer');
 
@@ -10,99 +14,188 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// ── 1. OTP Email (Registration + Forgot Password) ─────
+// ═══════════════════════════════════════════════════════
+// 1. OTP EMAIL → Registration + Forgot Password
+// ═══════════════════════════════════════════════════════
 const sendOTP = async (toEmail, otp, name) => {
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from:    `"SafeHer" <${process.env.MAIL_USER}>`,
     to:      toEmail,
-    subject: `${otp} is your SafeHer verification code`,
+    subject: `${otp} — Your SafeHer Verification Code`,
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:auto;border-radius:16px;overflow:hidden;border:1px solid #fce7f3">
-        <div style="background:#ec4899;padding:28px 32px">
-          <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700">SafeHer</h1>
-          <p style="color:#fce7f3;margin:4px 0 0;font-size:13px">Women Safety Platform</p>
-        </div>
-        <div style="padding:32px;background:#fff">
-          <p style="color:#111827;font-size:15px;margin:0 0 24px">Hi <strong>${name || 'there'}</strong> 👋, your verification code is:</p>
-          <div style="background:#fdf2f8;border:2px dashed #f9a8d4;border-radius:12px;padding:24px;text-align:center;margin-bottom:24px">
-            <p style="font-size:42px;font-weight:700;letter-spacing:10px;color:#ec4899;margin:0;font-family:monospace">${otp}</p>
-          </div>
-          <p style="color:#6b7280;font-size:13px;margin:0 0 6px">⏱️ Expires in <strong>5 minutes</strong>.</p>
-          <p style="color:#9ca3af;font-size:12px;margin:0">If you didn't request this, ignore this email.</p>
-        </div>
-        <div style="padding:14px 32px;background:#fdf2f8;border-top:1px solid #fce7f3">
-          <p style="color:#d1d5db;font-size:11px;margin:0;text-align:center">© SafeHer — Women Safety Platform, Bangladesh</p>
-        </div>
-      </div>
-    `,
+<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #fce7f3">
+
+  <tr><td style="background:#ec4899;padding:28px 32px">
+    <p style="color:#fff;margin:0;font-size:24px;font-weight:700">SafeHer 🛡️</p>
+    <p style="color:#fce7f3;margin:6px 0 0;font-size:13px">Women Safety Platform — Bangladesh</p>
+  </td></tr>
+
+  <tr><td style="padding:36px 32px">
+    <p style="color:#111827;font-size:16px;margin:0 0 6px">Hi <b>${name || 'there'}</b> 👋</p>
+    <p style="color:#374151;font-size:14px;margin:0 0 28px;line-height:1.6">
+      Here is your verification code. It is valid for <b>5 minutes</b>.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0">
+    <tr><td align="center" style="background:#fdf2f8;border:2px dashed #f9a8d4;border-radius:14px;padding:30px 20px">
+      <p style="font-size:52px;font-weight:700;letter-spacing:14px;color:#ec4899;margin:0;font-family:'Courier New',monospace">${otp}</p>
+      <p style="color:#9ca3af;font-size:12px;margin:12px 0 0">Do not share this code with anyone</p>
+    </td></tr></table>
+    <p style="color:#6b7280;font-size:13px;margin:24px 0 6px">⏱ Expires in <b>5 minutes</b>.</p>
+    <p style="color:#9ca3af;font-size:12px;margin:0">If you didn't request this, please ignore this email.</p>
+  </td></tr>
+
+  <tr><td style="background:#fdf2f8;padding:16px 32px;border-top:1px solid #fce7f3">
+    <p style="color:#d1d5db;font-size:11px;margin:0;text-align:center">© SafeHer · Women Safety Platform · Bangladesh</p>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>`,
   });
+  console.log(`✅ OTP email → ${toEmail} | ID: ${info.messageId}`);
 };
 
-// ── 2. SOS Alert Email (to trusted contacts) ──────────
-const sendSosEmail = async ({ toEmail, toName, senderName, location, mapLink, sentAt }) => {
-  const displayTime = sentAt || new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' });
-  await transporter.sendMail({
-    from:    `"SafeHer Emergency" <${process.env.MAIL_USER}>`,
+// ═══════════════════════════════════════════════════════
+// 2. SOS ALERT EMAIL → Trusted Contacts (with location + map)
+// ═══════════════════════════════════════════════════════
+const sendSosEmail = async ({ toEmail, toName, senderName, senderPhone, location, mapLink, sentAt }) => {
+  const time = sentAt || new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' });
+
+  const info = await transporter.sendMail({
+    from:    `"SafeHer Emergency 🆘" <${process.env.MAIL_USER}>`,
     to:      toEmail,
-    subject: `🆘 EMERGENCY: ${senderName} needs help RIGHT NOW`,
+    subject: `🆘 EMERGENCY — ${senderName} needs help RIGHT NOW!`,
     html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:auto;border-radius:16px;overflow:hidden;border:2px solid #fca5a5">
-        <div style="background:#dc2626;padding:24px 28px">
-          <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700">🆘 Emergency Alert</h1>
-          <p style="color:#fee2e2;margin:6px 0 0;font-size:13px">Sent via SafeHer — Women Safety Platform</p>
-        </div>
-        <div style="padding:28px;background:#fff">
-          <p style="color:#111827;font-size:15px;margin:0 0 16px">Hi <strong>${toName || 'there'}</strong>,</p>
-          <p style="color:#111827;font-size:15px;margin:0 0 20px;line-height:1.7">
-            <strong style="color:#dc2626">${senderName}</strong> has triggered an <strong>emergency SOS alert</strong> and needs your help immediately.
-          </p>
-          <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:18px;margin-bottom:20px">
-            <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#991b1b">📍 Last known location</p>
-            <p style="margin:0 0 14px;font-size:14px;color:#374151">${location || 'Location not available'}</p>
-            ${mapLink
-              ? `<a href="${mapLink}" style="display:inline-block;background:#dc2626;color:#fff;padding:10px 22px;border-radius:999px;text-decoration:none;font-size:13px;font-weight:600">📍 Open in Google Maps →</a>`
-              : `<p style="font-size:12px;color:#9ca3af;margin:0">GPS location not available</p>`}
-          </div>
-          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:18px;margin-bottom:24px">
-            <p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#166534">✅ What to do right now</p>
-            <ol style="margin:0;padding-left:18px;font-size:13px;color:#374151;line-height:2.2">
-              <li>Call <strong>${senderName}</strong> immediately</li>
-              <li>If no answer — go to her location or send someone</li>
-              <li>Call emergency services: <strong style="color:#dc2626">999</strong></li>
-            </ol>
-          </div>
-          <p style="font-size:12px;color:#9ca3af;margin:0">Alert sent at: <strong>${displayTime}</strong></p>
-        </div>
-        <div style="padding:14px 28px;background:#fef2f2;border-top:1px solid #fca5a5">
-          <p style="color:#d1d5db;font-size:11px;margin:0;text-align:center">© SafeHer — Women Safety Platform, Bangladesh</p>
-        </div>
-      </div>
-    `,
+<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;border:2px solid #fca5a5">
+
+  <tr><td style="background:#dc2626;padding:28px 32px">
+    <p style="color:#fff;margin:0;font-size:26px;font-weight:700">🆘 Emergency Alert</p>
+    <p style="color:#fee2e2;margin:6px 0 0;font-size:13px">Sent via SafeHer — Women Safety Platform</p>
+  </td></tr>
+
+  <tr><td style="padding:32px">
+    <p style="color:#111827;font-size:16px;margin:0 0 6px">Hi <b>${toName || 'there'}</b>,</p>
+    <p style="color:#111827;font-size:15px;margin:0 0 24px;line-height:1.7">
+      <b style="color:#dc2626">${senderName}</b> has triggered an <b>emergency SOS alert</b>
+      and needs your immediate help. Please take action right now!
+    </p>
+
+    <!-- Location -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px">
+    <tr><td style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:20px">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#991b1b">📍 Last Known Location</p>
+      <p style="margin:0 0 ${mapLink ? '16px' : '0'};font-size:14px;color:#374151;line-height:1.6">
+        ${location || 'Location not available'}
+      </p>
+      ${mapLink
+        ? `<a href="${mapLink}" style="display:inline-block;background:#dc2626;color:#fff;padding:12px 28px;border-radius:999px;text-decoration:none;font-size:14px;font-weight:700">
+            📍 Open in Google Maps →
+           </a>`
+        : ''}
+    </td></tr></table>
+
+    <!-- Contact Info -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px">
+    <tr><td style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:18px">
+      <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#9a3412">📱 Her Contact Information</p>
+      <p style="margin:0 0 4px;font-size:14px;color:#374151"><b>Name:</b> ${senderName}</p>
+      ${senderPhone
+        ? `<p style="margin:0;font-size:14px;color:#374151"><b>Phone:</b>
+            <a href="tel:${senderPhone}" style="color:#dc2626;text-decoration:none;font-weight:700">${senderPhone}</a>
+           </p>`
+        : ''}
+    </td></tr></table>
+
+    <!-- What to do -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
+    <tr><td style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:20px">
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#166534">✅ What To Do RIGHT NOW</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#374151">1️⃣  Call <b>${senderName}</b> immediately</p>
+      <p style="margin:0 0 8px;font-size:14px;color:#374151">2️⃣  If no answer — go to her location or send someone</p>
+      <p style="margin:0;font-size:14px;color:#374151">3️⃣  Call emergency services:
+        <b style="color:#dc2626;font-size:18px"> 999</b>
+      </p>
+    </td></tr></table>
+
+    <p style="font-size:12px;color:#9ca3af;margin:0;line-height:1.8">
+      Alert sent at: <b>${time}</b><br>
+      You received this because <b>${senderName}</b> added you as a trusted contact on SafeHer.
+    </p>
+  </td></tr>
+
+  <tr><td style="background:#fef2f2;padding:16px 32px;border-top:1px solid #fca5a5">
+    <p style="color:#d1d5db;font-size:11px;margin:0;text-align:center">© SafeHer · Women Safety Platform · Bangladesh</p>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>`,
   });
+  console.log(`✅ SOS email → ${toEmail} (${toName}) | ID: ${info.messageId}`);
 };
 
-// ── 3. New Report Notification (to admin/team) ────────
-const sendNewReportEmail = async ({ reportCode, incidentType, location, isAnonymous }) => {
-  await transporter.sendMail({
+// ═══════════════════════════════════════════════════════
+// 3. NEW REPORT NOTIFICATION → Admin/Team
+// ═══════════════════════════════════════════════════════
+const sendNewReportEmail = async ({ reportCode, incidentType, location, isAnonymous, contactName }) => {
+  const info = await transporter.sendMail({
     from:    `"SafeHer Reports" <${process.env.MAIL_USER}>`,
-    to:      process.env.MAIL_USER,
-    subject: `📋 New Report — ${reportCode}`,
+    to:      process.env.TEAM_EMAIL || process.env.MAIL_USER,
+    subject: `📋 New Incident Report — ${reportCode}`,
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:28px;background:#fff;border-radius:12px;border:1px solid #f9a8d4">
-        <h2 style="color:#ec4899;margin:0 0 16px">New Incident Report</h2>
-        <table style="width:100%;border-collapse:collapse;font-size:14px">
-          <tr><td style="padding:8px 0;color:#6b7280;width:140px">Report Code</td>
-              <td style="padding:8px 0;font-weight:600;font-family:monospace;color:#111827">${reportCode}</td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Incident Type</td>
-              <td style="padding:8px 0;color:#111827;text-transform:capitalize">${incidentType}</td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Location</td>
-              <td style="padding:8px 0;color:#111827">${location || 'Not provided'}</td></tr>
-          <tr><td style="padding:8px 0;color:#6b7280">Anonymous</td>
-              <td style="padding:8px 0;color:#111827">${isAnonymous ? 'Yes' : 'No — contact info provided'}</td></tr>
-        </table>
-      </div>
-    `,
+<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9fafb;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #f9a8d4">
+
+  <tr><td style="background:#ec4899;padding:24px 32px">
+    <p style="color:#fff;margin:0;font-size:20px;font-weight:700">📋 New Incident Report</p>
+    <p style="color:#fce7f3;margin:4px 0 0;font-size:13px">SafeHer Admin Notification</p>
+  </td></tr>
+
+  <tr><td style="padding:28px 32px">
+    <p style="color:#374151;font-size:14px;margin:0 0 20px">A new incident report has been submitted and requires your review.</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px">
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:10px 0;color:#6b7280;width:140px;font-weight:600">Report Code</td>
+        <td style="padding:10px 0;font-family:'Courier New',monospace;font-weight:700;font-size:17px;color:#ec4899">${reportCode}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:10px 0;color:#6b7280;font-weight:600">Incident Type</td>
+        <td style="padding:10px 0;color:#111827;text-transform:capitalize;font-weight:600">${incidentType}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:10px 0;color:#6b7280;font-weight:600">Location</td>
+        <td style="padding:10px 0;color:#111827">${location || 'Not provided'}</td>
+      </tr>
+      <tr style="border-bottom:1px solid #f3f4f6">
+        <td style="padding:10px 0;color:#6b7280;font-weight:600">Anonymous</td>
+        <td style="padding:10px 0">
+          ${isAnonymous
+            ? '<span style="background:#fef3c7;color:#92400e;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:600">Yes — Anonymous</span>'
+            : '<span style="background:#d1fae5;color:#065f46;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:600">No — Contact provided</span>'}
+        </td>
+      </tr>
+      ${!isAnonymous && contactName ? `
+      <tr>
+        <td style="padding:10px 0;color:#6b7280;font-weight:600">Contact</td>
+        <td style="padding:10px 0;color:#111827">${contactName}</td>
+      </tr>` : ''}
+    </table>
+    <p style="color:#9ca3af;font-size:12px;margin:20px 0 0">
+      Submitted: <b>${new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' })}</b>
+    </p>
+  </td></tr>
+
+  <tr><td style="background:#fdf2f8;padding:16px 32px;border-top:1px solid #fce7f3">
+    <p style="color:#d1d5db;font-size:11px;margin:0;text-align:center">© SafeHer · Admin Panel · Bangladesh</p>
+  </td></tr>
+
+</table></td></tr></table>
+</body></html>`,
   });
+  console.log(`✅ Report notification → ${process.env.TEAM_EMAIL || process.env.MAIL_USER} | Code: ${reportCode} | ID: ${info.messageId}`);
 };
 
 module.exports = { sendOTP, sendSosEmail, sendNewReportEmail };
