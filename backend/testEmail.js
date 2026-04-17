@@ -1,46 +1,72 @@
 // backend/testEmail.js
 // Run: node testEmail.js
-// এটা run করলে তোমার নিজের email-এ একটা test email আসবে
 
 require('dotenv').config();
-const { sendOTP, sendSosEmail } = require('./utils/mailer');
+const { sendOTP, sendSosEmail, sendNewReportEmail } = require('./utils/mailer');
 
-async function test() {
-  const testEmail = process.env.MAIL_USER; // নিজের email-এ পাঠাচ্ছি
+async function run() {
+  const me = process.env.MAIL_USER;
 
-  console.log('🔧 Testing email config...');
-  console.log('   MAIL_USER:', process.env.MAIL_USER || '❌ NOT SET');
-  console.log('   MAIL_PASS:', process.env.MAIL_PASS ? '✅ Set (' + process.env.MAIL_PASS.length + ' chars)' : '❌ NOT SET');
+  console.log('\n🔧 Email Config');
+  console.log('══════════════════════════════════════');
+  console.log(`MAIL_USER : ${me || '❌ NOT SET'}`);
+  console.log(`MAIL_PASS : ${process.env.MAIL_PASS ? `✅ Set (${process.env.MAIL_PASS.length} chars)` : '❌ NOT SET'}`);
+  console.log('══════════════════════════════════════\n');
 
-  // Test 1: OTP email
+  if (!me || !process.env.MAIL_PASS) {
+    console.log('❌ Set MAIL_USER and MAIL_PASS in .env first!\n');
+    process.exit(1);
+  }
+
+  // Test 1: OTP
   try {
-    console.log('\n📧 Sending test OTP email...');
-    await sendOTP(testEmail, '123456', 'Test User');
-    console.log('✅ OTP email sent successfully!');
-  } catch (err) {
-    console.log('❌ OTP email failed:', err.message);
-    if (err.message.includes('Invalid login')) {
-      console.log('   → Gmail App Password is wrong. See fix below.');
+    console.log('Test 1: OTP email...');
+    await sendOTP(me, '847291', 'Shompa');
+    console.log('✅ OTP email sent!\n');
+  } catch (e) {
+    console.log(`❌ OTP failed: ${e.message}`);
+    if (e.message.includes('Invalid login') || e.message.includes('Username and Password')) {
+      console.log('\n⚠️  FIX: Use Gmail APP PASSWORD (not your normal password)');
+      console.log('   1. Go to: myaccount.google.com');
+      console.log('   2. Security → 2-Step Verification → App Passwords');
+      console.log('   3. Generate for "Mail" → copy 16-char password');
+      console.log('   4. Paste in .env as MAIL_PASS=xxxx xxxx xxxx xxxx\n');
     }
   }
 
   // Test 2: SOS email
   try {
-    console.log('\n📧 Sending test SOS email...');
+    console.log('Test 2: SOS alert email...');
     await sendSosEmail({
-      toEmail:    testEmail,
-      toName:     'Test Contact',
-      senderName: 'Shompa Akter',
-      location:   'Tilagoar, Sylhet, Bangladesh',
-      mapLink:    'https://maps.google.com/?q=24.8949,91.8687',
-      sentAt:     new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' }),
+      toEmail:     me,
+      toName:      'Test Contact',
+      senderName:  'Shompa Akter',
+      senderPhone: '01762254990',
+      location:    'Tilagoar, Sylhet, Bangladesh',
+      mapLink:     'https://maps.google.com/?q=24.8949,91.8687',
+      sentAt:      new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' }),
     });
-    console.log('✅ SOS email sent successfully!');
-  } catch (err) {
-    console.log('❌ SOS email failed:', err.message);
+    console.log('✅ SOS email sent!\n');
+  } catch (e) {
+    console.log(`❌ SOS email failed: ${e.message}\n`);
   }
 
-  console.log('\n✅ Test complete. Check your inbox at:', testEmail);
+  // Test 3: Report notification
+  try {
+    console.log('Test 3: Report notification email...');
+    await sendNewReportEmail({
+      reportCode:   'SH-TEST1234',
+      incidentType: 'harassment',
+      location:     'Sylhet, Bangladesh',
+      isAnonymous:  false,
+      contactName:  'Shompa Akter',
+    });
+    console.log('✅ Report notification sent!\n');
+  } catch (e) {
+    console.log(`❌ Report notification failed: ${e.message}\n`);
+  }
+
+  console.log(`✅ Done! Check inbox: ${me}\n`);
 }
 
-test();
+run();
