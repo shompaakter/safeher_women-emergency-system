@@ -1,35 +1,33 @@
 // backend/server.js
-// তোমার existing server.js-এ এই routes যোগ করো
 
-const express = require('express');
+const express  = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
+const cors     = require('cors');
 require('dotenv').config();
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin:      process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(express.json());
 
-// ── Routes ────────────────────────────────────────────
-const authRoutes   = require('./routes/auth');
-const sosRoutes    = require('./routes/sos');
-const contactRoutes = require('./routes/contacts');
-const reportRoutes = require('./routes/report');   // ← নতুন
-const mapRoutes    = require('./routes/map');       // ← নতুন
+// ── Routes ──────────────────────────────────────────
+app.use('/api/auth',     require('./routes/auth'));
+app.use('/api/sos',      require('./routes/sos'));
+app.use('/api/contacts', require('./routes/contacts'));
+app.use('/api/report',   require('./routes/report'));
+app.use('/api/map',      require('./routes/map'));
 
-app.use('/api/auth',     authRoutes);
-app.use('/api/sos',      sosRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/report',   reportRoutes);  // ← নতুন
-app.use('/api/map',      mapRoutes);     // ← নতুন
+app.get('/', (req, res) => res.json({ status: 'SafeHer API running ✅' }));
 
-// ── MongoDB connect ───────────────────────────────────
+// ── Connect + Start ──────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`✅ Server running on port ${process.env.PORT || 5000}`);
-    });
+    app.listen(process.env.PORT || 5000, () =>
+      console.log(`✅ Server → http://localhost:${process.env.PORT || 5000}`)
+    );
   })
   .catch(err => console.error('❌ MongoDB error:', err));
