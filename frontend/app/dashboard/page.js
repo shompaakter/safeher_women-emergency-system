@@ -8,118 +8,201 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function Dashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [contacts, setContacts] = useState([]);
+  const router      = useRouter();
   const initialized = useRef(false);
+  const [user,     setUser]     = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [history,  setHistory]  = useState([]);
+  const [loading,  setLoading]  = useState(true);
 
-  const fetchContacts = useCallback(async (token) => {
-    const res = await axios.get(`${API_URL}/api/contacts`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
+  const fetchAll = useCallback(async token => {
+    const h = { Authorization: `Bearer ${token}` };
+    const [cRes, hRes] = await Promise.all([
+      axios.get(`${API_URL}/api/contacts`,    { headers: h }),
+      axios.get(`${API_URL}/api/sos/history`, { headers: h }),
+    ]);
+    return { contacts: cRes.data || [], history: hRes.data?.alerts || [] };
   }, []);
 
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-
     const stored = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
+    const token  = localStorage.getItem('token');
+    if (!stored || !token) { router.push('/login'); return; }
+    setUser(JSON.parse(stored));
+    fetchAll(token)
+      .then(({ contacts, history }) => { setContacts(contacts); setHistory(history); })
+      .catch(() => router.push('/login'))
+      .finally(() => setLoading(false));
+  }, [router, fetchAll]);
 
-    if (!stored || !token) {
-      router.push('/login');
-      return;
-    }
-
-    Promise.all([
-      Promise.resolve(JSON.parse(stored)),
-      fetchContacts(token),
-    ]).then(([parsedUser, fetchedContacts]) => {
-      setUser(parsedUser);
-      setContacts(fetchedContacts);
-    }).catch(() => {
-      router.push('/login');
-    });
-  }, [router, fetchContacts]);
-
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/login');
-  };
+  const handleLogout = () => { localStorage.clear(); router.push('/login'); };
 
   return (
     <main className="min-h-screen bg-gray-50 font-sans">
-      <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <nav className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm">
         <Link href="/" className="font-serif text-xl font-black text-pink-500">SafeHer</Link>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">Hello, {user?.name || 'User'} 👋</span>
-          <button onClick={handleLogout} className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg text-gray-500 hover:border-red-200 hover:text-red-500 transition-colors">Logout</button>
+          {user && (
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-bold text-sm">
+                {user.name?.[0]?.toUpperCase()}
+              </div>
+              <span className="text-sm text-gray-600 font-medium">{user.name}</span>
+            </div>
+          )}
+          <button onClick={handleLogout}
+            className="text-xs border border-gray-200 px-3 py-1.5 rounded-lg text-gray-500 hover:border-red-200 hover:text-red-500 transition-colors">
+            Logout
+          </button>
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
 
+        {/* SOS Banner */}
         <div className="bg-linear-to-r from-indigo-900 to-indigo-700 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="font-serif text-xl font-bold text-white">Are you in danger?</h2>
-            <p className="text-indigo-300 text-sm mt-1">Send SOS now — your trusted contacts will be alerted</p>
+            <p className="text-indigo-300 text-sm mt-1">Press SOS — contacts get email with your location instantly</p>
           </div>
-          <Link href="/sos" className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3 rounded-full font-bold text-lg shadow-lg transition-colors animate-pulse">
-            🆘 Send SOS
+          <Link href="/sos"
+            className="bg-pink-500 hover:bg-pink-600 text-white px-8 py-3.5 rounded-full font-bold text-base shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+            <span className="text-xl">🆘</span> Send SOS
           </Link>
         </div>
 
+        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Trusted Contacts', value: contacts.length, color: 'text-pink-500' },
-            { label: 'Account Active', value: '✓', color: 'text-green-500' },
-            { label: 'Stay Safe', value: '🛡️', color: 'text-indigo-600' },
+            { label: 'Trusted Contacts', value: contacts.length, color: 'text-pink-500',  bg: 'bg-pink-50'  },
+            { label: 'SOS Sent',         value: history.length,  color: 'text-red-500',   bg: 'bg-red-50'   },
+            { label: 'Account Active',   value: '✓',             color: 'text-green-600', bg: 'bg-green-50' },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 text-center">
-              <div className={`font-serif text-3xl font-black ${s.color}`}>{s.value}</div>
+            <div key={i} className={`${s.bg} rounded-2xl p-4 text-center`}>
+              <div className={`font-serif text-3xl font-black ${s.color}`}>{loading ? '—' : s.value}</div>
               <div className="text-xs text-gray-400 mt-1">{s.label}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link href="/contacts" className="bg-white rounded-2xl border border-gray-100 hover:border-pink-200 p-5 flex items-center gap-4 transition-colors group">
-            <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center text-2xl group-hover:bg-pink-100 transition-colors">👥</div>
-            <div>
-              <h3 className="font-medium text-gray-900 text-sm">Trusted Contacts</h3>
-              <p className="text-xs text-gray-400 mt-0.5">{contacts.length} contacts added</p>
-            </div>
-            <span className="ml-auto text-gray-300 group-hover:text-pink-400">→</span>
-          </Link>
-          <Link href="/sos" className="bg-white rounded-2xl border border-gray-100 hover:border-red-200 p-5 flex items-center gap-4 transition-colors group">
-            <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-2xl group-hover:bg-red-100 transition-colors">🆘</div>
-            <div>
-              <h3 className="font-medium text-gray-900 text-sm">Send SOS</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Get help in emergency situations</p>
-            </div>
-            <span className="ml-auto text-gray-300 group-hover:text-red-400">→</span>
-          </Link>
+        {/* Quick links — Map এখানে আছে, homepage-এ নেই */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { href: '/contacts', icon: '👥', title: 'Trusted Contacts', sub: `${contacts.length} contact${contacts.length !== 1 ? 's' : ''} added`, border: 'hover:border-pink-200', iconBg: 'bg-pink-50',  iconHover: 'group-hover:bg-pink-100',  arrow: 'group-hover:text-pink-400'  },
+            { href: '/sos',      icon: '🆘', title: 'Send SOS',         sub: 'Emergency alert to contacts',                                          border: 'hover:border-red-200',  iconBg: 'bg-red-50',   iconHover: 'group-hover:bg-red-100',   arrow: 'group-hover:text-red-400'   },
+            { href: '/map',      icon: '🗺️', title: 'Incident Map',     sub: 'View reported incidents (login required)',                              border: 'hover:border-blue-200', iconBg: 'bg-blue-50',  iconHover: 'group-hover:bg-blue-100',  arrow: 'group-hover:text-blue-400'  },
+          ].map((item, i) => (
+            <Link key={i} href={item.href}
+              className={`bg-white rounded-2xl border border-gray-100 ${item.border} p-5 flex items-center gap-4 transition-all group`}>
+              <div className={`w-12 h-12 rounded-xl ${item.iconBg} ${item.iconHover} flex items-center justify-center text-2xl transition-colors`}>
+                {item.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-gray-900 text-sm">{item.title}</h3>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{item.sub}</p>
+              </div>
+              <span className={`text-gray-200 ${item.arrow} transition-colors text-lg`}>→</span>
+            </Link>
+          ))}
         </div>
 
+        {/* Contacts preview */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium text-gray-900">Trusted Contacts</h3>
-            <Link href="/contacts" className="text-xs text-pink-500 hover:underline">View all →</Link>
+            <h3 className="font-semibold text-gray-900">Trusted Contacts</h3>
+            <Link href="/contacts" className="text-xs text-pink-500 hover:underline">Manage →</Link>
           </div>
-          {contacts.length === 0 ? (
+          {loading ? (
+            <div className="space-y-3">{[1,2].map(i => (
+              <div key={i} className="flex gap-3 animate-pulse">
+                <div className="w-9 h-9 rounded-full bg-gray-100" />
+                <div className="flex-1 space-y-2 py-1">
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/4" />
+                </div>
+              </div>
+            ))}</div>
+          ) : contacts.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">No contacts added yet.</p>
-              <Link href="/contacts" className="inline-block mt-3 bg-pink-500 text-white text-xs px-4 py-2 rounded-full hover:bg-pink-600 transition-colors">Add Contact</Link>
+              <p className="text-4xl mb-2">👥</p>
+              <p className="text-gray-400 text-sm mb-3">No contacts added yet.</p>
+              <Link href="/contacts" className="inline-block bg-pink-500 text-white text-xs px-5 py-2 rounded-full hover:bg-pink-600 transition-colors">Add Contact</Link>
             </div>
           ) : (
             <div className="space-y-3">
               {contacts.slice(0, 3).map((c, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-medium text-sm">{c.contactName?.[0]}</div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">{c.contactName}</p>
-                    <p className="text-xs text-gray-400">{c.contactPhone} · {c.relation}</p>
+                <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-semibold text-sm shrink-0">
+                    {c.contactName?.[0]?.toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{c.contactName}</p>
+                    <p className="text-xs text-gray-400">📱 {c.contactPhone} · {c.relation}</p>
+                    {c.email
+                      ? <p className="text-xs text-pink-400">📧 {c.email}</p>
+                      : <p className="text-xs text-red-400">⚠️ No email — add email for SOS</p>
+                    }
+                  </div>
+                </div>
+              ))}
+              {contacts.length > 3 && <p className="text-xs text-gray-400 text-center">+{contacts.length - 3} more</p>}
+            </div>
+          )}
+        </div>
+
+        {/* SOS History */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900">SOS History</h3>
+            <span className="text-xs bg-gray-100 text-gray-500 px-2.5 py-1 rounded-full">
+              {history.length} alert{history.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {loading ? (
+            <div className="space-y-3">{[1,2].map(i => (
+              <div key={i} className="animate-pulse flex gap-3 p-3 rounded-xl bg-gray-50">
+                <div className="w-2.5 h-2.5 rounded-full bg-gray-200 mt-1.5 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                </div>
+              </div>
+            ))}</div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-4xl mb-2">🛡️</p>
+              <p className="text-gray-400 text-sm">No SOS alerts sent yet. Stay safe!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((alert, i) => (
+                <div key={alert._id || i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                  <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${
+                    alert.status === 'sent' ? 'bg-green-500' :
+                    alert.status === 'active' ? 'bg-yellow-400 animate-pulse' : 'bg-gray-400'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-gray-800 truncate">📍 {alert.address || 'Location unavailable'}</p>
+                      {alert.mapLink && (
+                        <a href={alert.mapLink} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-blue-500 hover:underline shrink-0">View map →</a>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                      <span className="text-xs text-gray-400">📧 {alert.emailSent ?? 0} email{(alert.emailSent ?? 0) !== 1 ? 's' : ''} sent</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        alert.status === 'sent' ? 'bg-green-100 text-green-700' :
+                        alert.status === 'active' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
+                      }`}>{alert.status}</span>
+                    </div>
+                    <p className="text-xs text-gray-300 mt-1">
+                      {new Date(alert.createdAt).toLocaleString('en-BD', {
+                        timeZone: 'Asia/Dhaka', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                      })}
+                    </p>
                   </div>
                 </div>
               ))}
