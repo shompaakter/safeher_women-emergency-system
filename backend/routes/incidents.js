@@ -1,7 +1,7 @@
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Incident       = require('../models/Incident');
+const Incident       = require('../models/incident');
 
 function getUserId(req) {
   return req.user?.userId || req.user?.id || req.user?._id || null;

@@ -1,13 +1,37 @@
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Contact        = require('../models/Contact');
+const Contact        = require('../models/contact');
 
 function getUserId(req) {
   return req.user?.userId || req.user?.id || req.user?._id || null;
 }
 
+// ═══════════════════════════════════════════════════
+// GET /api/contacts/fix-email
+// ⚠️ ONE-TIME USE — Railway DB-তে email field add করে
+// Use করার পরে এই route টা delete করো
+// ═══════════════════════════════════════════════════
+router.get('/fix-email', async (req, res) => {
+  try {
+    const result = await Contact.updateMany(
+      { email: { $exists: false } },
+      { $set: { email: '' } }
+    );
+    console.log(`✅ Fixed ${result.modifiedCount} contacts — email field added`);
+    res.json({
+      success:  true,
+      message:  `Fixed! ${result.modifiedCount} contacts updated.`,
+      modified: result.modifiedCount,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════
 // GET /api/contacts
+// ═══════════════════════════════════════════════════
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -17,7 +41,6 @@ router.get('/', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Ensure email field always exists in response
     const normalized = contacts.map(c => ({
       ...c,
       email: c.email || '',
@@ -30,7 +53,9 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════
 // POST /api/contacts
+// ═══════════════════════════════════════════════════
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -44,13 +69,11 @@ router.post('/', authMiddleware, async (req, res) => {
     const count = await Contact.countDocuments({ user: userId });
     if (count >= 5) return res.status(400).json({ message: 'Maximum 5 trusted contacts allowed.' });
 
-    const emailVal = (email || '').trim().toLowerCase();
-
     const contact = await Contact.create({
       user:         userId,
       contactName:  contactName.trim(),
       phone:        phone.trim(),
-      email:        emailVal,
+      email:        (email || '').trim().toLowerCase(),
       relationship: (relationship || 'Other').trim(),
     });
 
@@ -63,14 +86,15 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// PUT /api/contacts/:id  — update including email
+// ═══════════════════════════════════════════════════
+// PUT /api/contacts/:id
+// ═══════════════════════════════════════════════════
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { contactName, phone, email, relationship } = req.body;
-    const emailVal = (email || '').trim().toLowerCase();
 
     const contact = await Contact.findOneAndUpdate(
       { _id: req.params.id, user: userId },
@@ -78,7 +102,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
         $set: {
           contactName:  (contactName || '').trim(),
           phone:        (phone || '').trim(),
-          email:        emailVal,
+          email:        (email || '').trim().toLowerCase(),
           relationship: (relationship || 'Other').trim(),
         },
       },
@@ -96,7 +120,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════
 // DELETE /api/contacts/:id
+// ═══════════════════════════════════════════════════
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -110,18 +136,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete contact' });
-  }
-});
-// GET /api/contacts/fix-email — one time use, তারপর delete করো
-router.get('/fix-email', async (req, res) => {
-  try {
-    const result = await Contact.updateMany(
-      { email: { $exists: false } },
-      { $set: { email: '' } }
-    );
-    res.json({ message: 'Fixed!', modified: result.modifiedCount });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
   }
 });
 

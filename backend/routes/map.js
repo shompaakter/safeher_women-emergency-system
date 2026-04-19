@@ -1,7 +1,7 @@
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Incident       = require('../models/Incident');
+const Incident       = require('../models/incident');
 
 // GET /api/map?type=harassment
 router.get('/', authMiddleware, async (req, res) => {
