@@ -1,7 +1,7 @@
 const express          = require('express');
 const router           = express.Router();
 const authMiddleware   = require('../middleware/authMiddleware');
-const User             = require('../models/User');
+const User             = require('../models/user');
 const Contact          = require('../models/Contact');
 const SosAlert         = require('../models/SosAlert');
 const { sendSosEmail } = require('../utils/mailer');
