@@ -1,37 +1,49 @@
+// backend/routes/map.js
+
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Incident       = require('../models/incident');
+const Report         = require('../models/Report');   // ← capital R
 
-// GET /api/map?type=harassment
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { type } = req.query;
-    const filter = {};
-    if (type && type !== 'all') filter.incidentType = type;
 
-    const incidents = await Incident.find(filter)
-      .select('incidentType severity lat lng date')
-      .sort({ createdAt: -1 })
-      .limit(200)
-      .lean();
+    const query = {
+      latitude:  { $ne: null, $exists: true },
+      longitude: { $ne: null, $exists: true },
+      status:    { $in: ['reviewing', 'action_taken', 'resolved', 'police_referred'] },
+    };
+    if (type && type !== 'all') query.incidentType = type;
 
-    const now = new Date();
-    const thisMonth = incidents.filter(i => {
-      const d = new Date(i.date || i.createdAt);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length;
+    const reports = await Report.find(query)
+      .select('incidentType incidentDate latitude longitude severity')
+      .sort({ incidentDate: -1 })
+      .limit(300);
 
-    res.json({
-      incidents,
-      stats: {
-        total:        incidents.length,
-        thisMonth,
-        highSeverity: incidents.filter(i => i.severity === 'high').length,
-      },
-    });
+    // Privacy: fuzz location ±~500m
+    const incidents = reports.map(r => ({
+      id:           r._id,
+      incidentType: r.incidentType,
+      date:         r.incidentDate,
+      severity:     r.severity || 'medium',
+      lat:          r.latitude  + (Math.random() - 0.5) * 0.01,
+      lng:          r.longitude + (Math.random() - 0.5) * 0.01,
+    }));
+
+    const now        = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [total, thisMonth, highSeverity] = await Promise.all([
+      Report.countDocuments({ status: { $ne: 'pending' } }),
+      Report.countDocuments({ status: { $ne: 'pending' }, createdAt: { $gte: monthStart } }),
+      Report.countDocuments({ status: { $ne: 'pending' }, severity: 'high' }),
+    ]);
+
+    res.json({ incidents, stats: { total, thisMonth, highSeverity } });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to load map data' });
+    console.error('Map API error:', err.message);
+    res.status(500).json({ error: 'Failed to load map data' });
   }
 });
 

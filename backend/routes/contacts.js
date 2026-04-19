@@ -1,141 +1,106 @@
+// backend/routes/contacts.js
+// GET    /api/contacts      → list contacts
+// POST   /api/contacts      → add contact
+// PUT    /api/contacts/:id  → update contact
+// DELETE /api/contacts/:id  → delete contact
+
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Contact        = require('../models/contact');
+const Contact        = require('../models/Contact');
 
-function getUserId(req) {
-  return req.user?.userId || req.user?.id || req.user?._id || null;
-}
-
-// ═══════════════════════════════════════════════════
-// GET /api/contacts/fix-email
-// ⚠️ ONE-TIME USE — Railway DB-তে email field add করে
-// Use করার পরে এই route টা delete করো
-// ═══════════════════════════════════════════════════
-router.get('/fix-email', async (req, res) => {
-  try {
-    const result = await Contact.updateMany(
-      { email: { $exists: false } },
-      { $set: { email: '' } }
-    );
-    console.log(`✅ Fixed ${result.modifiedCount} contacts — email field added`);
-    res.json({
-      success:  true,
-      message:  `Fixed! ${result.modifiedCount} contacts updated.`,
-      modified: result.modifiedCount,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ═══════════════════════════════════════════════════
-// GET /api/contacts
-// ═══════════════════════════════════════════════════
+// ── GET /api/contacts ─────────────────────────────────
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-
-    const contacts = await Contact.find({ user: userId })
-      .sort({ createdAt: -1 })
-      .lean();
-
-    const normalized = contacts.map(c => ({
-      ...c,
-      email: c.email || '',
-    }));
-
-    res.json({ contacts: normalized });
+    const userId   = req.user?.userId;
+    const contacts = await Contact.find({ user: userId }).sort({ createdAt: 1 });
+    res.json(contacts);
   } catch (err) {
-    console.error('GET contacts:', err.message);
-    res.status(500).json({ message: 'Failed to fetch contacts' });
+    console.error('GET contacts error:', err.message);
+    res.status(500).json({ message: 'Failed to fetch contacts.' });
   }
 });
 
-// ═══════════════════════════════════════════════════
-// POST /api/contacts
-// ═══════════════════════════════════════════════════
+// ── POST /api/contacts ────────────────────────────────
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { contactName, phone, email, relationship } = req.body;
+    // ── Accept both field name conventions ──
+    const contactName  = req.body.contactName  || req.body.name  || '';
+    const contactPhone = req.body.contactPhone || req.body.phone || '';
+    const email        = req.body.email        || '';
+    const relation     = req.body.relation     || req.body.relationship || '';
 
-    if (!contactName?.trim()) return res.status(400).json({ message: 'Name is required.' });
-    if (!phone?.trim())       return res.status(400).json({ message: 'Phone is required.' });
+    console.log('POST /api/contacts body:', { contactName, contactPhone, email, relation });
 
+    // Validation
+    if (!contactName.trim())  return res.status(400).json({ message: 'Name is required.' });
+    if (!contactPhone.trim()) return res.status(400).json({ message: 'Phone is required.' });
+    if (!relation.trim())     return res.status(400).json({ message: 'Relationship is required.' });
+
+    // Max 5 contacts
     const count = await Contact.countDocuments({ user: userId });
     if (count >= 5) return res.status(400).json({ message: 'Maximum 5 trusted contacts allowed.' });
 
     const contact = await Contact.create({
       user:         userId,
       contactName:  contactName.trim(),
-      phone:        phone.trim(),
-      email:        (email || '').trim().toLowerCase(),
-      relationship: (relationship || 'Other').trim(),
+      contactPhone: contactPhone.trim(),
+      email:        email.trim(),
+      relation:     relation.trim(),
     });
 
-    console.log(`✅ Contact added: ${contact.contactName} | email: "${contact.email}"`);
-    res.status(201).json({ contact });
+    console.log('✅ Contact saved:', contact.contactName);
+    res.status(201).json(contact);
 
   } catch (err) {
-    console.error('POST contact:', err.message);
-    res.status(500).json({ message: 'Failed to add contact' });
+    console.error('POST contacts error:', err.message, err);
+    res.status(500).json({ message: 'Failed to save contact. ' + err.message });
   }
 });
 
-// ═══════════════════════════════════════════════════
-// PUT /api/contacts/:id
-// ═══════════════════════════════════════════════════
+// ── PUT /api/contacts/:id ─────────────────────────────
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
-    const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    const userId = req.user?.userId;
 
-    const { contactName, phone, email, relationship } = req.body;
+    const contactName  = req.body.contactName  || req.body.name  || '';
+    const contactPhone = req.body.contactPhone || req.body.phone || '';
+    const email        = req.body.email        || '';
+    const relation     = req.body.relation     || req.body.relationship || '';
+
+    if (!contactName.trim())  return res.status(400).json({ message: 'Name is required.' });
+    if (!contactPhone.trim()) return res.status(400).json({ message: 'Phone is required.' });
+    if (!relation.trim())     return res.status(400).json({ message: 'Relationship is required.' });
 
     const contact = await Contact.findOneAndUpdate(
       { _id: req.params.id, user: userId },
-      {
-        $set: {
-          contactName:  (contactName || '').trim(),
-          phone:        (phone || '').trim(),
-          email:        (email || '').trim().toLowerCase(),
-          relationship: (relationship || 'Other').trim(),
-        },
-      },
-      { new: true, runValidators: false }
+      { contactName: contactName.trim(), contactPhone: contactPhone.trim(), email: email.trim(), relation: relation.trim() },
+      { new: true }
     );
 
-    if (!contact) return res.status(404).json({ message: 'Contact not found' });
+    if (!contact) return res.status(404).json({ message: 'Contact not found.' });
 
-    console.log(`✅ Contact updated: ${contact.contactName} | email: "${contact.email}"`);
-    res.json({ contact });
+    console.log('✅ Contact updated:', contact.contactName);
+    res.json(contact);
 
   } catch (err) {
-    console.error('PUT contact:', err.message);
-    res.status(500).json({ message: 'Failed to update contact' });
+    console.error('PUT contacts error:', err.message);
+    res.status(500).json({ message: 'Failed to update contact.' });
   }
 });
 
-// ═══════════════════════════════════════════════════
-// DELETE /api/contacts/:id
-// ═══════════════════════════════════════════════════
+// ── DELETE /api/contacts/:id ──────────────────────────
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
-    const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
-
-    const contact = await Contact.findOneAndDelete({ _id: req.params.id, user: userId });
-    if (!contact) return res.status(404).json({ message: 'Contact not found' });
-
-    console.log(`🗑️ Deleted: ${contact.contactName}`);
-    res.json({ message: 'Contact deleted' });
-
+    const userId = req.user?.userId;
+    await Contact.findOneAndDelete({ _id: req.params.id, user: userId });
+    res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to delete contact' });
+    console.error('DELETE contacts error:', err.message);
+    res.status(500).json({ message: 'Failed to delete contact.' });
   }
 });
 

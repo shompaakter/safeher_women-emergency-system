@@ -1,13 +1,12 @@
+// backend/models/Report.js
+// ⚠️  পুরনো report.js (lowercase) delete করো আগে!
+
 const mongoose = require('mongoose');
 
 const reportSchema = new mongoose.Schema(
   {
-    reportCode:   { type: String, required: true, unique: true, index: true },
-    incidentType: {
-      type: String,
-      enum: ['harassment', 'rape', 'stalking', 'domestic', 'cyber', 'other'],
-      required: true,
-    },
+    reportCode:         { type: String, unique: true, required: true },
+    incidentType:       { type: String, enum: ['harassment','rape','stalking','domestic','cyber','other'], required: true },
     incidentDate:       { type: Date,    default: null },
     location:           { type: String,  default: '' },
     latitude:           { type: Number,  default: null },
@@ -24,13 +23,13 @@ const reportSchema = new mongoose.Schema(
     contactEmail:       { type: String,  default: '' },
     wantsFollowUp:      { type: Boolean, default: false },
     consentPolice:      { type: Boolean, default: false },
-    status: {
-      type:    String,
-      enum:    ['pending', 'reviewed', 'resolved'],
-      default: 'pending',
-    },
+    severity:           { type: String,  enum: ['low','medium','high'], default: 'medium' },
+    status:             { type: String,  enum: ['pending','reviewing','action_taken','resolved','police_referred','closed'], default: 'pending' },
+    adminNote:          { type: String,  default: '' },
+    user:               { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Report', reportSchema);
+// ✅ OverwriteModelError fix
+module.exports = mongoose.models.Report || mongoose.model('Report', reportSchema);
