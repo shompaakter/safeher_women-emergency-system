@@ -49,6 +49,9 @@ router.post('/', async (req, res) => {
         : new Date(incidentDate);
     }
 
+    // ✅ FIXED — isAnonymous সঠিকভাবে check করা হচ্ছে
+    const anonymous = isAnonymous === true || isAnonymous === 'true';
+
     const report = await Report.create({
       reportCode,
       incidentType: incidentType === 'other' && otherType ? 'other' : incidentType,
@@ -62,7 +65,7 @@ router.post('/', async (req, res) => {
       accusedDescription: accusedDescription || '',
       hasEvidence:   !!hasEvidence,
       evidenceNote:  evidenceNote  || '',
-      isAnonymous:   isAnonymous !== false,
+      isAnonymous:   anonymous,           // ✅ FIXED
       contactName:   contactName  || '',
       contactPhone:  contactPhone || '',
       contactEmail:  contactEmail || '',
@@ -87,7 +90,6 @@ router.post('/', async (req, res) => {
       reportCode: report.reportCode,
       message:    'Report submitted successfully.',
     });
-
   } catch (err) {
     console.error('Report submit error:', err);
     res.status(500).json({ message: 'Failed to submit report. Please try again.' });
@@ -113,7 +115,6 @@ router.get('/status', async (req, res) => {
       wantsFollowUp: report.wantsFollowUp,
       consentPolice: report.consentPolice,
     });
-
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch status.' });
   }
