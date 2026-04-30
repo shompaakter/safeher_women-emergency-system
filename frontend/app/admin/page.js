@@ -1,5 +1,5 @@
 'use client';
-
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -20,7 +20,7 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (!res.ok) return setError(data.message || 'Login failed.');
-      localStorage.setItem('adminToken', data.token);
+    localStorage.setItem('token', data.token);
       router.push('/admin/reports');
     } catch {
       setError('Server error. Please try again.');
@@ -28,7 +28,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-indigo-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -60,6 +60,15 @@ export default function AdminLogin() {
           </form>
         </div>
       </div>
-    </main>
+      <div className="mt-8 flex justify-center">
+  <Link
+    href="/"
+    className="text-xs text-gray-400 hover:text-pink-500 transition-colors"
+  >
+    ← Back to Home
+  </Link>
+</div>
+</main>
+
   );
 }

@@ -40,8 +40,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-white font-sans overflow-x-hidden">
-
-      {/* ── Navbar ── */}
       <nav className={`sticky top-0 z-50 bg-white px-6 py-4 flex items-center justify-between transition-all duration-300 ${scrolled ? 'shadow-sm border-b border-gray-100' : ''}`}>
         <span className="font-serif text-2xl font-bold text-pink-500 tracking-tight">SafeHer</span>
 
@@ -76,16 +74,13 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* ── Hero ── */}
-      <section className="relative px-6 md:px-16 pt-14 pb-12 bg-gradient-to-br from-pink-50 via-orange-50 to-pink-50 overflow-hidden">
+      <section className="relative px-6 md:px-16 pt-14 pb-12 bg-linear-to-br from-pink-50 via-orange-50 to-pink-50 overflow-hidden">
 
-        {/* Blobs */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-pink-200 rounded-full opacity-20 blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-200 rounded-full opacity-20 blur-3xl translate-y-1/2 -translate-x-1/4 pointer-events-none" />
 
         <div className="relative grid grid-cols-1 md:grid-cols-2 items-center gap-10">
 
-          {/* Left text */}
           <div>
             <span
               className={`inline-block bg-pink-100 text-pink-700 text-xs font-semibold px-3 py-1 rounded-full mb-5 tracking-widest uppercase transition-all duration-500 ${heroReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
@@ -120,12 +115,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ── Right: Hero Image — exactly like screenshot ── */}
           <div
             className={`flex items-center justify-center relative transition-all duration-1000 ${heroReady ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             style={{ transitionDelay: '200ms' }}>
-
-            {/* Image container — rounded-3xl like screenshot, floating animation */}
             <div className="animate-float relative">
               <div className="relative w-full max-w-md overflow-hidden rounded-3xl shadow-2xl shadow-pink-200">
                 <Image
@@ -137,19 +129,15 @@ export default function HomePage() {
                   priority
                   className="w-full h-auto object-cover"
                 />
-                {/* Gradient overlay at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-pink-50/60 to-transparent" />
+       
+                <div className="absolute bottom-0 left-0 right-0 h-20 bg-linear-to-t from-pink-50/60 to-transparent" />
               </div>
-
-              {/* SOS badge */}
               <div
                 className={`absolute top-4 -right-4 bg-white shadow-lg rounded-xl px-3 py-2 flex items-center gap-2 text-xs font-semibold text-indigo-900 transition-all duration-700 ${heroReady ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'}`}
                 style={{ transitionDelay: '700ms' }}>
                 <span className="w-2 h-2 bg-green-500 rounded-full" />
                 SOS Sent — 3 contacts notified
               </div>
-
-              {/* Location badge */}
               <div
                 className={`absolute bottom-8 -left-4 bg-white shadow-lg rounded-xl px-3 py-2 flex items-center gap-2 text-xs font-semibold text-indigo-900 transition-all duration-700 ${heroReady ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
                 style={{ transitionDelay: '900ms' }}>
@@ -160,7 +148,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── Feature cards ── */}
         <div ref={cardsRef} className="relative mt-14 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {features.map((f, i) => (
             <div
@@ -175,10 +162,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Report Banner ── */}
       <section
         ref={bannerRef}
-        className={`mx-6 md:mx-16 my-10 p-8 rounded-2xl bg-gradient-to-r from-pink-500 to-pink-400 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-pink-200 transition-all duration-700 ${bannerInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        className={`mx-6 md:mx-16 my-10 p-8 rounded-2xl bg-linear-to-r from-pink-500 to-pink-400 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-pink-200 transition-all duration-700 ${bannerInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div>
           <h2 className="font-serif text-2xl font-bold text-white mb-1">Did something happen to you?</h2>
           <p className="text-sm text-pink-100 max-w-md">Report incidents confidentially. Your identity is protected. Our team will review and take action — you are not alone.</p>
@@ -188,9 +174,7 @@ export default function HomePage() {
           Submit a Report →
         </Link>
       </section>
-
-      {/* ── SOS Banner ── */}
-      <div className="mx-6 md:mx-16 mb-10 p-8 rounded-2xl bg-gradient-to-r from-indigo-900 to-indigo-700 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="mx-6 md:mx-16 mb-10 p-8 rounded-2xl bg-linear-to-r from-indigo-900 to-indigo-700 flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
           <h2 className="font-serif text-2xl font-bold text-white mb-1">In danger? One button is all it takes.</h2>
           <p className="text-sm text-indigo-300">Your trusted contacts receive your location via email in under 10 seconds.</p>
@@ -200,17 +184,15 @@ export default function HomePage() {
           See how SOS works →
         </Link>
       </div>
-
-      {/* ── Footer ── */}
       <footer className="px-6 md:px-16 py-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-gray-400">SafeHer © 2025 — Women Safety Platform</p>
+        <p className="text-xs text-gray-400">SafeHer © 2026 — Women Safety Platform</p>
         <div className="flex gap-5 items-center">
           <Link href="/about"  className="text-xs text-gray-400 hover:text-pink-500">About</Link>
           <Link href="/report" className="text-xs text-gray-400 hover:text-pink-500">Report</Link>
           <Link href="#"       className="text-xs text-gray-400 hover:text-pink-500">Privacy</Link>
           <Link href="#"       className="text-xs text-gray-400 hover:text-pink-500">GitHub</Link>
-          {/* Hidden admin dot */}
-          <Link href="/admin" className="text-xs text-gray-200 hover:text-gray-400 transition-colors ml-2">•</Link>
+    
+          <Link href="/admin" className="text-xs text-gray-200 hover:text-gray-400 transition-colors ml-2">Admin</Link>
         </div>
       </footer>
 

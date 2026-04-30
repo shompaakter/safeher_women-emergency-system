@@ -3,12 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 
-// ✅ Team member তথ্য এখানে আপডেট করো
 const teamMembers = [
   {
     initials: 'T1',
-    name: 'MST:Shompa Akther Jui',       // ← নাম দাও
-    role: 'full stack developer', // ← role দাও
+    name: 'MST:Shompa Akther Jui',       
+    role: 'full stack developer', 
     bio: 'Passionate about building tech solutions that make real-world impact.',
     photo: null,
   },
@@ -66,7 +65,7 @@ export default function AboutPage() {
         </p>
       </section>
 
-      {/* Stats Row */}
+  
       <section className="px-6 md:px-16 py-10 bg-white border-b border-gray-100">
         <div className="flex flex-wrap justify-center gap-12">
           {stats.map((s, i) => (
@@ -78,7 +77,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Mission */}
       <section className="px-6 md:px-16 py-14 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
         <div>
           <p className="text-xs font-medium text-pink-500 uppercase tracking-widest mb-2">Our Mission</p>
@@ -109,14 +107,12 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team Section */}
       <section className="px-6 md:px-16 py-14 bg-gray-50">
         <p className="text-xs font-medium text-pink-500 uppercase tracking-widest mb-2">Meet the team</p>
         <h2 className="font-serif text-3xl font-bold text-indigo-900 mb-8">The people behind SafeHer</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl">
           {teamMembers.map((member, i) => (
             <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 text-center hover:border-pink-200 transition-colors">
-              {/* Avatar / Photo */}
               <div className="w-20 h-20 rounded-full mx-auto mb-4 overflow-hidden border-2 border-pink-200 bg-linear-to-br from-pink-100 to-orange-100 flex items-center justify-center">
                 {member.photo ? (
                   <Image src={member.photo} alt={member.name} width={80} height={80} className="object-cover" />
@@ -137,7 +133,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Tech Stack */}
+   
       <section className="px-6 md:px-16 py-14 bg-white">
         <p className="text-xs font-medium text-pink-500 uppercase tracking-widest mb-2">Tech Stack</p>
         <h2 className="font-serif text-3xl font-bold text-indigo-900 mb-8">Built with modern tools</h2>
@@ -151,7 +147,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* CTA */}
+  
       <section className="mx-6 md:mx-16 mb-12 p-8 rounded-2xl bg-linear-to-r from-indigo-900 to-indigo-700 text-center">
         <h2 className="font-serif text-2xl font-bold text-white mb-2">Ready to try SafeHer?</h2>
         <p className="text-indigo-300 text-sm mb-6">Register now and set up your safety network in minutes.</p>
@@ -165,9 +161,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
+  
       <footer className="px-6 md:px-16 py-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-gray-400">SafeHer © 2025 — Women Safety Platform</p>
+        <p className="text-xs text-gray-400">SafeHer © 2026 — Women Safety Platform</p>
         <div className="flex gap-5">
           <Link href="/about" className="text-xs text-gray-400 hover:text-pink-500">About</Link>
           <Link href="#" className="text-xs text-gray-400 hover:text-pink-500">Privacy</Link>
