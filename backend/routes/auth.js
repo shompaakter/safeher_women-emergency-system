@@ -2,18 +2,14 @@ const express = require('express');
 const router  = express.Router();
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
-const User    = require('../models/user');
+const User    = require('../models/User');
 const { sendOTP } = require('../utils/mailer');
 
-// In-memory OTP store — production-এ Redis use করো
 const otpStore = new Map();
 
 const generateOTP = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-// ═══════════════════════════════════════════════════
-// POST /api/auth/send-otp
-// ═══════════════════════════════════════════════════
 router.post('/send-otp', async (req, res) => {
   try {
     const { phone, email, name } = req.body;
@@ -48,10 +44,6 @@ router.post('/send-otp', async (req, res) => {
     res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
   }
 });
-
-// ═══════════════════════════════════════════════════
-// POST /api/auth/register
-// ═══════════════════════════════════════════════════
 router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, password, otp } = req.body;
@@ -97,10 +89,6 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Registration failed. Please try again.' });
   }
 });
-
-// ═══════════════════════════════════════════════════
-// POST /api/auth/login
-// ═══════════════════════════════════════════════════
 router.post('/login', async (req, res) => {
   try {
     const { phone, password } = req.body;
@@ -147,9 +135,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════
-// POST /api/auth/forgot-password
-// ═══════════════════════════════════════════════════
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -177,9 +162,6 @@ router.post('/forgot-password', async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════
-// POST /api/auth/reset-password
-// ═══════════════════════════════════════════════════
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
