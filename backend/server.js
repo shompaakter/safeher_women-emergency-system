@@ -17,9 +17,9 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'https://safeher-women-emergency-system.vercel.app',
-  'https://safeher-women-emergency-system-qptoi01lh-shompaakters-projects.vercel.app'
+  'https://safeher-women-emergency-system-qptoi01lh-shompaakters-projects.vercel.app',
+  'https://safeher-women-emergency-system-git-main-shompaakters-projects.vercel.app'
 ];
-
 app.use(cors({
   origin: function (origin, callback) {
     // allow requests with no origin (mobile apps, curl, Postman)
