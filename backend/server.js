@@ -22,16 +22,16 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: function (origin, callback) {
-    // allow requests with no origin (mobile apps, curl, Postman)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || 
+        origin.includes('localhost') || 
+        origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS: ' + origin));
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
 }));
-
 app.use(express.json());
 app.use(cookieParser());
 
