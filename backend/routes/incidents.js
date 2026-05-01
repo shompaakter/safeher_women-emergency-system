@@ -1,13 +1,12 @@
 const express        = require('express');
 const router         = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
-const Incident       = require('../models/incident');
+const Incident       = require('../models/Incident');
 
 function getUserId(req) {
   return req.user?.userId || req.user?.id || req.user?._id || null;
 }
 
-// GET /api/incidents
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { type, severity } = req.query;
@@ -27,7 +26,6 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /api/incidents
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
