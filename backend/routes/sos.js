@@ -2,20 +2,16 @@ const express          = require('express');
 const router           = express.Router();
 const authMiddleware   = require('../middleware/authMiddleware');
 const User             = require('../models/user');
-const Contact          = require('../models/contact');
+const Contact          = require('../models/Contact');
 const SosAlert         = require('../models/SosAlert');
 const { sendSosEmail } = require('../utils/mailer');
 
 console.log('SosAlert model:', typeof SosAlert.find === 'function' ? '✅ OK' : '❌ PROBLEM');
 
-// ─── helper: extract userId safely ───────────────────
 function getUserId(req) {
   return req.user?.userId || req.user?.id || req.user?._id || null;
 }
 
-// ═══════════════════════════════════════════════════
-// POST /api/sos  →  trigger real SOS
-// ═══════════════════════════════════════════════════
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -39,7 +35,6 @@ router.post('/', authMiddleware, async (req, res) => {
 
     console.log(`\n🆘 SOS — ${user.name} | ${locationText}`);
 
-    // Save alert to DB
     const alert = await SosAlert.create({
       user:      userId,
       latitude:  latitude  || null,
@@ -50,7 +45,6 @@ router.post('/', authMiddleware, async (req, res) => {
       status:    'active',
     });
 
-    // Get trusted contacts
     const contacts = await Contact.find({ user: userId });
 
     if (contacts.length === 0) {
@@ -63,7 +57,6 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // Send emails
     let emailSent = 0;
     for (const c of contacts) {
       if (!c.email) {
@@ -104,9 +97,6 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════
-// GET /api/sos/history
-// ═══════════════════════════════════════════════════
 router.get('/history', authMiddleware, async (req, res) => {
   try {
     const userId = getUserId(req);
@@ -134,9 +124,6 @@ router.get('/history', authMiddleware, async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════
-// POST /api/sos/demo  →  no login needed
-// ═══════════════════════════════════════════════════
 router.post('/demo', async (req, res) => {
   try {
     const { email, phone, latitude, longitude } = req.body;
