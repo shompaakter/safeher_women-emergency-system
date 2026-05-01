@@ -10,8 +10,19 @@ const contactRoutes  = require('./routes/contacts');
 const incidentRoutes = require('./routes/incidents');
 const mapRoutes      = require('./routes/map');
 const reportRoutes   = require('./routes/report');
-const adminRoutes    = require('./routes/admin'); // ✅ admin route add
+const adminRoutes    = require('./routes/admin'); 
 
+app.use(express.json());
+app.use(cookieParser());
+
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://safeher-women-emergency-system.vercel.app',
+    'https://safeher-women-emergency-system-qptoi01lh-shompaakters-projects.vercel.app'
+  ],
+  credentials: true
+}));
 const app = express();
 
 app.use(cors({
@@ -27,7 +38,7 @@ app.use('/api/contacts',  contactRoutes);
 app.use('/api/incidents', incidentRoutes);
 app.use('/api/map',       mapRoutes);
 app.use('/api/report',    reportRoutes);
-app.use('/api/admin',     adminRoutes); // ✅ admin route register
+app.use('/api/admin',     adminRoutes); 
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
