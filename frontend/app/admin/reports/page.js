@@ -69,7 +69,7 @@ export default function AdminReports() {
     finally { setSaving(false); }
   };
 
-  const logout = () => { localStorage.removeItem('adminToken'); router.push('/admin'); };
+  const logout = () => { localStorage.setItem('adminToken', data.token);router.push('/admin'); };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -87,7 +87,6 @@ export default function AdminReports() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Total Reports',  value: stats.total    || 0, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -103,9 +102,9 @@ export default function AdminReports() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Report List */}
+        
           <div className="flex-1">
-            {/* Filter tabs */}
+          
             <div className="flex gap-2 flex-wrap mb-4">
               {['all','pending','reviewing','action_taken','resolved','police_referred'].map(s => (
                 <button key={s} onClick={() => setFilter(s)}
@@ -167,7 +166,7 @@ export default function AdminReports() {
             )}
           </div>
 
-          {/* Detail Panel */}
+      
           <div className="w-full lg:w-96 shrink-0">
             {!selected ? (
               <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center sticky top-24">
@@ -197,14 +196,14 @@ export default function AdminReports() {
                   </span>
                 </div>
 
-                {/* Info rows */}
+               
                 <div className="space-y-2 text-sm border-t border-gray-100 pt-4">
                   <div><span className="text-gray-400 text-xs">📍 Location</span><p className="text-gray-800 text-sm">{selected.location || 'Not provided'}</p></div>
                   {selected.incidentDate && <div><span className="text-gray-400 text-xs">📅 Incident date</span><p className="text-gray-800 text-sm">{new Date(selected.incidentDate).toLocaleDateString()}</p></div>}
                   <div><span className="text-gray-400 text-xs">📝 Description</span><p className="text-gray-800 text-sm leading-relaxed bg-gray-50 rounded-lg p-3 mt-1">{selected.description}</p></div>
                 </div>
 
-                {/* Accused */}
+          
                 {selected.accusedName && (
                   <div className="border-t border-gray-100 pt-4 space-y-1">
                     <p className="text-xs font-semibold text-gray-500">Accused</p>
@@ -213,7 +212,7 @@ export default function AdminReports() {
                   </div>
                 )}
 
-                {/* Contact */}
+              
                 {!selected.isAnonymous && (
                   <div className="border-t border-gray-100 pt-4 bg-green-50 rounded-xl p-3 space-y-1">
                     <p className="text-xs font-semibold text-green-700">Contact Info</p>
@@ -227,7 +226,7 @@ export default function AdminReports() {
                   </div>
                 )}
 
-                {/* Evidence */}
+                
                 {selected.hasEvidence && (
                   <div className="border-t border-gray-100 pt-4">
                     <p className="text-xs font-semibold text-amber-700 mb-1">📎 Evidence available</p>
@@ -235,7 +234,7 @@ export default function AdminReports() {
                   </div>
                 )}
 
-                {/* Admin note */}
+              
                 <div className="border-t border-gray-100 pt-4">
                   <label className="block text-xs font-semibold text-gray-500 mb-2">Admin Note</label>
                   <textarea value={note} onChange={e => setNote(e.target.value)} rows={3}
@@ -243,7 +242,7 @@ export default function AdminReports() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-400 resize-none" />
                 </div>
 
-                {/* Status update buttons */}
+            
                 <div className="border-t border-gray-100 pt-4">
                   <p className="text-xs font-semibold text-gray-500 mb-2">Update Status</p>
                   <div className="grid grid-cols-2 gap-2">
