@@ -246,5 +246,3 @@ setContacts(data.filter(c => c && c.contactName));
 </main>
   );
 }
-   
- 
