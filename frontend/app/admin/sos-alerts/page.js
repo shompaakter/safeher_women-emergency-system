@@ -15,8 +15,9 @@ export default function AdminSosAlerts() {
   const [filter,   setFilter]   = useState('all'); // all | sent | active | resolved
 
   const fetchAlerts = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (!token) { router.push('/login'); return; }
+ const token = localStorage.getItem('adminToken');
+if (!token) { router.push('/admin'); return; }
+   
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/api/admin/sos-alerts`, {

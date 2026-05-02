@@ -35,15 +35,13 @@ const [loading, setLoading] = useState(true);
 
     const h = { Authorization: `Bearer ${token}` };
 
-    // fetch contacts and history separately so one failure doesn't block both
     Promise.allSettled([
       axios.get(`${API_URL}/api/contacts`,    { headers: h }),
       axios.get(`${API_URL}/api/sos/history`, { headers: h }),
     ]).then(([cResult, hResult]) => {
-      // contacts
+   
       if (cResult.status === 'fulfilled') {
         const raw = cResult.value.data;
-        // handle both { contacts: [...] } and direct array
         const list = Array.isArray(raw)
           ? raw
           : Array.isArray(raw?.contacts)
@@ -54,7 +52,6 @@ const [loading, setLoading] = useState(true);
         console.error('Contacts fetch failed:', cResult.reason?.message);
       }
 
-      // history
       if (hResult.status === 'fulfilled') {
         const raw = hResult.value.data;
         const list = Array.isArray(raw)
@@ -110,7 +107,7 @@ const [loading, setLoading] = useState(true);
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-5">
 
       
-        {/* SOS Banner */}
+    
         <div className="bg-linear-to-r from-indigo-900 to-indigo-700 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <h2 className="font-serif text-xl font-bold text-white">Are you in danger?</h2>
@@ -124,7 +121,6 @@ const [loading, setLoading] = useState(true);
           </Link>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
             { label: 'Trusted Contacts', value: contacts.length, color: 'text-pink-500',  bg: 'bg-pink-50'  },
@@ -138,7 +134,6 @@ const [loading, setLoading] = useState(true);
           ))}
         </div>
 
-        {/* Quick links */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
@@ -154,7 +149,7 @@ const [loading, setLoading] = useState(true);
               iconHover: 'group-hover:bg-red-100', arrow: 'group-hover:text-red-400',
             },
             {
-              href: '/Map', icon: '🗺️', title: 'Incident Map',
+              href: '/map', icon: '🗺️', title: 'Incident Map',
               sub: 'View reported incidents nearby',
               border: 'hover:border-blue-200', iconBg: 'bg-blue-50',
               iconHover: 'group-hover:bg-blue-100', arrow: 'group-hover:text-blue-400',
@@ -176,7 +171,6 @@ const [loading, setLoading] = useState(true);
           ))}
         </div>
 
-        {/* Contacts preview */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">Trusted Contacts</h3>
@@ -220,7 +214,6 @@ const [loading, setLoading] = useState(true);
           )}
         </div>
 
-        {/* SOS History */}
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900">SOS History</h3>
