@@ -26,7 +26,7 @@ export default function ContactsPage() {
       setLoading(true);
       const res = await axios.get(`${API_URL}/api/contacts`, authHeader());
           console.log("API RESPONSE:", res.data);
-    setContacts(res.data);
+   setContacts(Array.isArray(res.data) ? res.data : res.data.contacts || []);
     } catch {
       setError('Failed to load contacts.');
     } finally {
