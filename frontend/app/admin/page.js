@@ -20,7 +20,7 @@ export default function AdminLogin() {
       });
       const data = await res.json();
       if (!res.ok) return setError(data.message || 'Login failed.');
-    localStorage.setItem('token', data.token);
+  localStorage.setItem('adminToken', data.token);
       router.push('/admin/reports');
     } catch {
       setError('Server error. Please try again.');
