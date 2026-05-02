@@ -16,7 +16,6 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Show success toast if redirected after register
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
       setSuccess('Account created! Please log in.');
@@ -48,11 +47,10 @@ function LoginForm() {
         password: form.password,
       });
 
-      // Store auth data
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
-
-      router.push('/dashboard');
+const redirect = searchParams.get('redirect') || '/dashboard';
+router.push(redirect);
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -64,7 +62,7 @@ function LoginForm() {
     <main className="min-h-screen bg-linear-to-br from-pink-50 via-white to-orange-50 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
 
-        {/* Logo */}
+   
         <div className="text-center mb-8">
           <Link href="/" className="font-serif text-3xl font-black text-pink-500">SafeHer</Link>
           <p className="text-gray-400 text-sm mt-2">Log in to your account</p>
