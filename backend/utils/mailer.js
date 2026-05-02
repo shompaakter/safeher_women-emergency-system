@@ -1,22 +1,15 @@
-// backend/utils/mailer.js
-// সব কিছু শুধু Nodemailer (Gmail) দিয়ে:
-// 1. sendOTP              → Registration + Forgot Password OTP
-// 2. sendSosEmail         → SOS alert with location + map link
-// 3. sendNewReportEmail   → New report notification to admin
-
 const nodemailer = require('nodemailer');
-
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com', 
+  port: 465,
+  secure: true,
+  family: 4,         
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
   },
 });
 
-// ═══════════════════════════════════════════════════════
-// 1. OTP EMAIL → Registration + Forgot Password
-// ═══════════════════════════════════════════════════════
 const sendOTP = async (toEmail, otp, name) => {
   const info = await transporter.sendMail({
     from:    `"SafeHer" <${process.env.MAIL_USER}>`,
@@ -56,9 +49,6 @@ const sendOTP = async (toEmail, otp, name) => {
   console.log(`✅ OTP email → ${toEmail} | ID: ${info.messageId}`);
 };
 
-// ═══════════════════════════════════════════════════════
-// 2. SOS ALERT EMAIL → Trusted Contacts (with location + map)
-// ═══════════════════════════════════════════════════════
 const sendSosEmail = async ({ toEmail, toName, senderName, senderPhone, location, mapLink, sentAt }) => {
   const time = sentAt || new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' });
 
@@ -136,9 +126,6 @@ const sendSosEmail = async ({ toEmail, toName, senderName, senderPhone, location
   console.log(`✅ SOS email → ${toEmail} (${toName}) | ID: ${info.messageId}`);
 };
 
-// ═══════════════════════════════════════════════════════
-// 3. NEW REPORT NOTIFICATION → Admin/Team
-// ═══════════════════════════════════════════════════════
 const sendNewReportEmail = async ({ reportCode, incidentType, location, isAnonymous, contactName }) => {
   const info = await transporter.sendMail({
     from:    `"SafeHer Reports" <${process.env.MAIL_USER}>`,
