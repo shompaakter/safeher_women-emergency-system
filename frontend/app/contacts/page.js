@@ -4,18 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 
-const API_URL      = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const RELATIONSHIPS = ['Mother', 'Father', 'Sister', 'Brother', 'Friend', 'Husband', 'Colleague', 'Relative', 'Other'];
-const EMPTY        = { contactName: '', phone: '', email: '', relationship: '' };
+const EMPTY = { contactName: '', phone: '', email: '', relationship: '' };
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState([]);
-  const [form,     setForm]     = useState(EMPTY);
-  const [editId,   setEditId]   = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [saving,   setSaving]   = useState(false);
-  const [error,    setError]    = useState('');
-  const [success,  setSuccess]  = useState('');
+  const [form, setForm] = useState(EMPTY);
+  const [editId, setEditId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const authHeader = () => ({
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
@@ -25,38 +25,39 @@ export default function ContactsPage() {
     try {
       setLoading(true);
       const res = await axios.get(`${API_URL}/api/contacts`, authHeader());
-          console.log("API RESPONSE:", res.data);
-  const data = Array.isArray(res.data) ? res.data : res.data.contacts || [];
-setContacts(data.filter(c => c && c.contactName));
+      const raw = Array.isArray(res.data) ? res.data : (res.data.contacts || []);
+      const clean = raw.filter(c => c != null && typeof c === 'object' && c.contactName);
+      setContacts(clean);
     } catch {
       setError('Failed to load contacts.');
     } finally {
       setLoading(false);
     }
-  
-}, []);
+  }, []);
+
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
 
   const flash = (msg, type = 'ok') => {
     if (type === 'ok') { setSuccess(msg); setTimeout(() => setSuccess(''), 3500); }
-    else               { setError(msg);   setTimeout(() => setError(''),   4000); }
+    else { setError(msg); setTimeout(() => setError(''), 4000); }
   };
 
   const handleSubmit = async () => {
     setError('');
     if (!form.contactName.trim()) return flash('Name is required.', 'err');
-    if (!form.phone.trim())       return flash('Phone is required.', 'err');
-    if (!form.relationship)       return flash('Please select a relationship.', 'err');
+    if (!form.phone.trim()) return flash('Phone is required.', 'err');
+    if (!form.relationship) return flash('Please select a relationship.', 'err');
 
     setSaving(true);
     try {
       if (editId) {
         const res = await axios.put(`${API_URL}/api/contacts/${editId}`, form, authHeader());
-        setContacts(prev => prev.map(c => c._id === editId ? res.data.contact : c));
+        setContacts(prev => prev.map(c => c._id === editId ? res.data.contact || res.data : c));
         flash('Contact updated successfully!');
       } else {
         const res = await axios.post(`${API_URL}/api/contacts`, form, authHeader());
-        setContacts(prev => [res.data.contact, ...prev]);
+        const newContact = res.data.contact || res.data;
+        setContacts(prev => [newContact, ...prev]);
         flash('Contact added successfully!');
       }
       setForm(EMPTY);
@@ -79,14 +80,13 @@ setContacts(data.filter(c => c && c.contactName));
     }
   };
 
-
   const handleEdit = (c) => {
     setEditId(c._id);
     setForm({
-      contactName:  c.contactName  || '',
-      phone:        c.phone        || '',
-      email:        c.email        || '',   // ← email must be here
-      relationship: c.relationship || '',
+      contactName: c.contactName || '',
+      phone: c.phone || c.contactPhone || '',
+      email: c.email || '',
+      relationship: c.relationship || c.relation || '',
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -109,70 +109,58 @@ setContacts(data.filter(c => c && c.contactName));
       </nav>
 
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
-
         <div>
           <h1 className="font-serif text-2xl font-bold text-indigo-900">Trusted Contacts</h1>
           <p className="text-sm text-gray-500 mt-1">Add up to 5 contacts. SOS email alert will be sent to them.</p>
         </div>
 
-        {error   && <div className="bg-red-50   border border-red-200   text-red-600   text-sm rounded-xl px-4 py-3">{error}</div>}
+        {error && <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3">{error}</div>}
         {success && <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl px-4 py-3">✅ {success}</div>}
 
-      
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">{editId ? '✏️ Edit Contact' : '+ Add New Contact'}</h2>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Full Name <span className="text-red-400">*</span></label>
-            <input
-              type="text" value={form.contactName}
+            <input type="text" value={form.contactName}
               onChange={e => setForm(f => ({ ...f, contactName: e.target.value }))}
               placeholder="Contact's full name"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm"
-            />
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm" />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Phone Number <span className="text-red-400">*</span></label>
-            <input
-              type="tel" value={form.phone}
+            <input type="tel" value={form.phone}
               onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
               placeholder="01XXXXXXXXX"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm"
-            />
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm" />
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Email Address <span className="text-pink-500 font-medium">★ Required for SOS alerts</span>
             </label>
-            <input
-              type="email" value={form.email}
+            <input type="email" value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               placeholder="contact@email.com"
-              className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm"
-            />
+              className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm" />
             <p className="text-xs text-amber-500 mt-1">⚠️ Without email, SOS alert cannot be sent to this contact.</p>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Relationship <span className="text-red-400">*</span></label>
-            <select
-              value={form.relationship}
+            <select value={form.relationship}
               onChange={e => setForm(f => ({ ...f, relationship: e.target.value }))}
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm bg-white"
-            >
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 text-sm bg-white">
               <option value="">Select relationship</option>
               {RELATIONSHIPS.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button
-              onClick={handleSubmit}
+            <button onClick={handleSubmit}
               disabled={saving || (contacts.length >= 5 && !editId)}
-              className="flex-1 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 text-white py-3 rounded-xl font-medium text-sm transition-colors"
-            >
+              className="flex-1 bg-pink-500 hover:bg-pink-600 disabled:opacity-50 text-white py-3 rounded-xl font-medium text-sm transition-colors">
               {saving ? 'Saving...' : editId ? 'Update Contact' : '+ Add Contact'}
             </button>
             {editId && (
@@ -216,11 +204,11 @@ setContacts(data.filter(c => c && c.contactName));
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-800 text-sm">{c.contactName}</span>
-                    {c.relationship && (
-                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{c.relationship}</span>
+                    {(c.relationship || c.relation) && (
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{c.relationship || c.relation}</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">📱 {c.phone}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">📱 {c.phone || c.contactPhone}</p>
                   {c.email ? (
                     <p className="text-xs text-green-600 mt-0.5">✉️ {c.email}</p>
                   ) : (
@@ -239,10 +227,10 @@ setContacts(data.filter(c => c && c.contactName));
         <div className="bg-pink-50 border border-pink-100 rounded-2xl p-4">
           <p className="text-xs text-pink-700 font-medium mb-1">💡 How SOS works</p>
           <p className="text-xs text-pink-600 leading-relaxed">
-           When SOS is triggered, an emergency email with your real-time GPS location is sent to all trusted contacts. Without a valid email, SOS alerts cannot be delivered.
+            When SOS is triggered, an emergency email with your real-time GPS location is sent to all trusted contacts. Without a valid email, SOS alerts cannot be delivered.
           </p>
         </div>
       </div>
-</main>
+    </main>
   );
 }
