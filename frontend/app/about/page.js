@@ -7,9 +7,9 @@ const teamMembers = [
   {
     initials: 'T1',
     name: 'MST:Shompa Akther Jui',       
-    role: 'full stack developer', 
-    bio: 'Passionate about building tech solutions that make real-world impact.',
-    photo: null,
+    role: 'full stack developer and project lead', 
+    bio: 'Passionate about building tech solutions that make real-world impact using AI.',
+    photo: '/amrpic.jpeg',
   },
   {
     initials: 'T2',
