@@ -69,7 +69,7 @@ export default function AdminReports() {
     finally { setSaving(false); }
   };
 
-  const logout = () => { localStorage.setItem('adminToken', data.token);router.push('/admin'); };
+  const logout = () => { localStorage.setItem('token', data.token);router.push('/admin'); };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
